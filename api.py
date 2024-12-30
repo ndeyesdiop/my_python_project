@@ -5,22 +5,24 @@ from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_pinecone import PineconeVectorStore
 from langchain.chains import RetrievalQA
 from langchain.prompts import PromptTemplate
-from pinecone import Pinecone
+import pinecone
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = FastAPI()
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
+embedding = OpenAIEmbeddings(model="text-embedding-ada-002")
 
 # Initialize Pinecone
-pc = Pinecone(api_key=PINECONE_API_KEY)
-
-embedding = OpenAIEmbeddings(model="text-embedding-ada-002")
+pinecone.init(api_key=PINECONE_API_KEY, environment="us-east-1")  # Remplacez 'us-west1-gcp' par votre environnement Pinecone
 index_name = "pdf-index"
 
 vectorstore = PineconeVectorStore.from_existing_index(
     index_name=index_name,
-    embedding=embedding
+    embedding = embedding
 )
 
 # Initialize ChatOpenAI
@@ -57,8 +59,8 @@ class Query(BaseModel):
 # Create API Endpoint
 @app.post("/ask")
 async def ask_question(query: Query):
-    response = qa.invoke(query.question)
-    return {"answer": response['result']}
+    response = qa.run(query.question)
+    return {"answer": response}
 
 if __name__ == "__main__":
     import uvicorn
